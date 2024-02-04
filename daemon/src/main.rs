@@ -1,3 +1,4 @@
+mod config;
 mod error;
 
 use error::DaemonError;
@@ -6,19 +7,16 @@ use nix::{
     sys::wait::{waitpid, WaitPidFlag},
     unistd::Pid,
 };
-use serde::{Deserialize, Serialize};
-use shared::config::ConfigHolder;
 
-const CONFIG_FILE_NAME: &str = "daemon";
-#[derive(Debug, Default, Serialize, Deserialize)]
-struct Config {
-    number: i32,
-}
+use crate::config::{Config, CONFIG_FILE_NAME};
+use shared::config::ConfigHolder;
 
 const STACK_SIZE: usize = 2 * 1024 * 1024; // 2 MB
 
 fn main() -> Result<(), DaemonError> {
     let config = ConfigHolder::<Config>::new(CONFIG_FILE_NAME)?;
+
+    dbg!(&config);
 
     let pid: Pid;
     let mut stack = vec![0; STACK_SIZE];
