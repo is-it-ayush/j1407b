@@ -1,12 +1,11 @@
 [package]
-name = "daemon"
+name = "shared"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-nix = { version = "0.27.1", features = ['sched', 'process'] }
+toml = "0.8.9"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
-shared = { path = "../shared" }
