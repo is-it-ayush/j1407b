@@ -7,6 +7,6 @@ use error::CliError;
 use shared::config::ConfigHolder;
 
 fn main() -> Result<(), CliError> {
-    let config = ConfigHolder::<Config>::new(CONFIG_FILE_NAME)?;
+    let _config = ConfigHolder::<Config>::new(CONFIG_FILE_NAME)?;
     Ok(())
 }

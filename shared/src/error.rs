@@ -9,11 +9,11 @@ pub enum SharedError {
     },
 
     #[error("IO error: {source}")]
-    IoError { source: std::io::Error },
+    IO { source: std::io::Error },
 
     #[error("Deserialize error: {source}")]
-    DeserializeError { source: toml::de::Error },
+    Deserialize { source: toml::de::Error },
 
     #[error("Serialize error: {source}")]
-    SerializeError { source: toml::ser::Error },
+    Serialize { source: toml::ser::Error },
 }

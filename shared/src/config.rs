@@ -45,7 +45,7 @@ where
                 if err.kind() == io::ErrorKind::NotFound {
                     String::new()
                 } else {
-                    return Err(SharedError::IoError { source: err })?;
+                    return Err(SharedError::IO { source: err })?;
                 }
             }
         };
@@ -57,15 +57,15 @@ where
 
         // parse & return.
         let config = toml::from_str::<T>(&config_string)
-            .map_err(|err| SharedError::DeserializeError { source: err })?;
+            .map_err(|err| SharedError::Deserialize { source: err })?;
         Ok(config)
     }
 
     /// write to disk.
     pub fn write(&self) -> Result<(), SharedError> {
-        let config_string = toml::to_string(&self.config)
-            .map_err(|err| SharedError::SerializeError { source: err })?;
-        fs::write(&self.path, config_string).map_err(|err| SharedError::IoError { source: err })
+        let config_string =
+            toml::to_string(&self.config).map_err(|err| SharedError::Serialize { source: err })?;
+        fs::write(&self.path, config_string).map_err(|err| SharedError::IO { source: err })
     }
 
     /// get the path to the config file.

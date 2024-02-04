@@ -29,11 +29,11 @@ fn main() -> Result<(), DaemonError> {
         | CloneFlags::CLONE_NEWUSER
         | CloneFlags::CLONE_NEWCGROUP;
     unsafe {
-        pid = clone(Box::new(|| child()), child_stack, flags, None)
-            .map_err(|err| DaemonError::CloneError { errno: err })?
+        pid = clone(Box::new(child), child_stack, flags, None)
+            .map_err(|err| DaemonError::Clone { errno: err })?
     }
     let exit = waitpid(Some(pid), Some(WaitPidFlag::__WCLONE))
-        .map_err(|err| DaemonError::WaitError { errno: err })?;
+        .map_err(|err| DaemonError::Wait { errno: err })?;
     println!("Child exited with {:?}", exit);
     Ok(())
 }
