@@ -2,7 +2,7 @@
 
 use crate::{
     error::SharedError,
-    utils::{self, ensure_config_dir},
+    utils::{self, ensure_directory},
 };
 use serde::{Deserialize, Serialize};
 use std::{fs, io};
@@ -38,7 +38,7 @@ where
 
     /// read from disk.
     pub fn read(base_path: &str, config_path: &str) -> Result<T, SharedError> {
-        ensure_config_dir()?;
+        ensure_directory(base_path)?;
         let config_string = match fs::read_to_string(config_path) {
             Ok(config_string) => config_string,
             Err(err) => {

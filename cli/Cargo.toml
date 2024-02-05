@@ -9,3 +9,4 @@ edition = "2021"
 thiserror = "1"
 serde = { version = "1", features = ["derive"] }
 shared = { path = "../shared" }
+clap = { version = "4", features = ["derive", "cargo"] }

@@ -11,8 +11,6 @@ pub fn get_home_dir() -> Result<String, SharedError> {
 }
 
 /// Get the path to the config file.
-pub fn ensure_config_dir() -> Result<(), SharedError> {
-    let home = get_home_dir()?;
-    let config_dir = format!("{}/.config/j1407b", home);
-    std::fs::create_dir_all(config_dir).map_err(|err| SharedError::IO { source: err })
+pub fn ensure_directory(directory: &str) -> Result<(), SharedError> {
+    std::fs::create_dir_all(directory).map_err(|err| SharedError::IO { source: err })
 }
