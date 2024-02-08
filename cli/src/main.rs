@@ -8,6 +8,11 @@ use error::CliError;
 
 fn main() -> Result<(), CliError> {
     let mut cli = Cli::new()?;
-    cli.execute()?;
+    match cli.execute() {
+        Ok(_) => {}
+        Err(err) => {
+            eprintln!("Error: {}", err.to_string());
+        }
+    }
     Ok(())
 }

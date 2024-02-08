@@ -1,3 +1,5 @@
+use std::os::fd::RawFd;
+use nix::sys::socket::UnixAddr;
 use shared::error::SharedError;
 use thiserror::Error;
 
@@ -6,15 +8,17 @@ pub enum CliError {
     #[error("Shared Errror: {0}")]
     Shared(#[from] SharedError),
 
-    #[error("Failed to connect to socket: {errno}")]
-    Connect {
+    #[error("Failed to connect to socket at {addr}: {errno}")]
+    ConnectSocket {
+        addr: UnixAddr,
         #[source]
-        errno: std::io::Error,
+        errno: nix::errno::Errno,
     },
 
-    #[error("Failed to write to socket: {errno}")]
-    Write {
+    #[error("Failed to write to socket descriptor {fd}: {errno}")]
+    WriteSocket {
+        fd: RawFd,
         #[source]
-        errno: std::io::Error,
+        errno: nix::errno::Errno,
     },
 }

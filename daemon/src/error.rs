@@ -1,44 +1,59 @@
+use nix::sys::socket::UnixAddr;
 use shared::error::SharedError;
-use std::io;
+use std::os::fd::RawFd;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum DaemonError {
-    #[error("Failed to create new child process: {errno}")]
-    CloneSyscall {
-        #[source]
-        errno: nix::Error,
-    },
-    #[error("Failed to wait for child process: {errno}")]
-    WaitSyscall {
-        #[source]
-        errno: nix::Error,
-    },
-
     #[error("Shared Errror: {0}")]
     Shared(#[from] SharedError),
 
-    #[error("Failed to create socket: {errno}")]
-    CreateSocket {
+    #[error("Failed to set socket option on socket descriptor {fd} : {errno}")]
+    SetSocketOpt {
+        fd: RawFd,
         #[source]
-        errno: io::Error,
+        errno: nix::errno::Errno,
     },
 
-    #[error("Failed to read from socket: {source}")]
-    ReadSocket {
+    #[error("Failed to bind socket descriptor {fd} to address {addr}: {errno}")]
+    BindSocket {
+        fd: RawFd,
+        addr: UnixAddr,
         #[source]
-        source: io::Error,
+        errno: nix::errno::Errno,
     },
 
-    #[error("Could not convert to an UTF8 string: {source}")]
-    InvalidUtf8 {
-        #[from]
-        source: std::string::FromUtf8Error,
+    #[error("Failed to listen on socket descriptor {fd}: {errno}")]
+    ListenSocket {
+        fd: RawFd,
+        #[source]
+        errno: nix::errno::Errno,
     },
 
-    #[error("Failed to clone stream: {source}")]
-    CloneStream {
+    #[error("Failed to accept a connection from socket descriptor {fd}: {errno}")]
+    AcceptSocketConnection {
+        fd: RawFd,
         #[source]
-        source: io::Error,
+        errno: nix::errno::Errno,
+    },
+
+    #[error(
+        "Failed to read a connection fd {conn_fd} from socket descriptor {socket_fd}: {errno}"
+    )]
+    ReadSocketConnection {
+        socket_fd: RawFd,
+        conn_fd: RawFd,
+        #[source]
+        errno: nix::errno::Errno,
+    },
+
+    #[error(
+        "Failed to close a connection fd {conn_fd} from socket descriptor {socket_fd}: {errno}"
+    )]
+    CloseSocketConnection {
+        socket_fd: RawFd,
+        conn_fd: RawFd,
+        #[source]
+        errno: nix::errno::Errno,
     },
 }
