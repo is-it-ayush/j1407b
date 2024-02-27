@@ -17,15 +17,33 @@ pub enum SharedError {
         errno: nix::errno::Errno,
     },
 
-        #[error("Failed to create socket address (sockaddr_un): {errno}")]
+    #[error("Failed to create socket address (sockaddr_un): {errno}")]
     CreateUnixAddr {
         #[source]
         errno: nix::errno::Errno,
     },
 
+    #[error("Failed to serialize message: {0}")]
+    MessageSerialize(String),
+
+    #[error("Failed to deserialize message: {0}")]
+    MessageDeserialize(String),
+
     #[error("Deserialize error: {source}")]
-    Deserialize { source: toml::de::Error },
+    ConfigDeserialize { source: toml::de::Error },
 
     #[error("Serialize error: {source}")]
-    Serialize { source: toml::ser::Error },
+    ConfigSerialize { source: toml::ser::Error },
+}
+
+impl serde::ser::Error for SharedError {
+    fn custom<T: std::fmt::Display>(msg: T) -> Self {
+        SharedError::MessageSerialize(msg.to_string())
+    }
+}
+
+impl serde::de::Error for SharedError {
+    fn custom<T: std::fmt::Display>(msg: T) -> Self {
+        SharedError::MessageDeserialize(msg.to_string())
+    }
 }

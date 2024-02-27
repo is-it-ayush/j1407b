@@ -57,14 +57,14 @@ where
 
         // parse & return.
         let config = toml::from_str::<T>(&config_string)
-            .map_err(|err| SharedError::Deserialize { source: err })?;
+            .map_err(|err| SharedError::ConfigDeserialize { source: err })?;
         Ok(config)
     }
 
     /// write to disk.
     pub fn write(&self) -> Result<(), SharedError> {
         let config_string =
-            toml::to_string(&self.config).map_err(|err| SharedError::Serialize { source: err })?;
+            toml::to_string(&self.config).map_err(|err| SharedError::ConfigSerialize { source: err })?;
         fs::write(&self.path, config_string).map_err(|err| SharedError::IO { source: err })
     }
 
