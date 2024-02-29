@@ -8,5 +8,6 @@ edition = "2021"
 [dependencies]
 nix = { version = "0.27.1", features = ['sched', 'process', 'socket'] }
 thiserror = "1"
+rust-fr = "1.0.1"
 serde = { version = "1", features = ["derive"] }
 shared = { path = "../shared" }

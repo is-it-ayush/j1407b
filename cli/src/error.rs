@@ -1,6 +1,6 @@
-use std::os::fd::RawFd;
 use nix::sys::socket::UnixAddr;
 use shared::error::SharedError;
+use std::os::fd::RawFd;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

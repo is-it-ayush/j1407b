@@ -1,6 +1,5 @@
 use crate::{
     clap::{ClapCli, Commands},
-    config::{Config, CONFIG_FILE_NAME},
     error::CliError,
 };
 use clap::Parser;
@@ -8,11 +7,13 @@ use nix::{
     sys::socket::{connect, socket, AddressFamily, SockFlag, SockType, UnixAddr},
     unistd::write,
 };
-use shared::{config::ConfigHolder, error::SharedError};
+use shared::{
+    comms::{Command, Header, MessageType},
+    error::SharedError,
+};
 use std::os::fd::{AsRawFd, OwnedFd};
 
 pub struct Cli {
-    pub config: ConfigHolder<Config>,
     pub cli: ClapCli,
     pub socket_fd: OwnedFd,
 }
@@ -22,8 +23,6 @@ const DAEMON_SOCKET: &str = "/tmp/j1047b.sock";
 impl Cli {
     /// create a new Cli instance
     pub fn new() -> Result<Self, CliError> {
-        let config = ConfigHolder::<Config>::new(CONFIG_FILE_NAME)?;
-
         // create a new socket address (sockaddr_un)
         let socket_addr = UnixAddr::new(DAEMON_SOCKET.as_bytes())
             .map_err(|e| SharedError::CreateUnixAddr { errno: e })?;
@@ -48,7 +47,6 @@ impl Cli {
         })?;
 
         Ok(Cli {
-            config,
             cli: ClapCli::parse(),
             socket_fd: socket_fd,
         })
@@ -65,7 +63,19 @@ impl Cli {
     /// `pull`: Send a pull command to the daemon over the socket connection
     /// with the image name as the payload.
     fn pull(&mut self, image: String) -> Result<(), CliError> {
-        write(self.socket_fd.as_raw_fd(), image.as_bytes()).map_err(|e| CliError::WriteSocket {
+        let body_bytes = rust_fr::serializer::to_bytes(&image)
+            .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
+
+        let header = Header::new(MessageType::Request, Command::Pull, body_bytes.len() as u64);
+        let header_bytes = rust_fr::serializer::to_bytes(&header)
+            .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
+
+        //println!("header_type_size: {}", std::mem::size_of::<Header>());
+        //println!("header_size: {}", header_bytes.len());
+        //println!("body_size: {}", body_bytes.len());
+
+        let message = [header_bytes, body_bytes].concat();
+        write(self.socket_fd.as_raw_fd(), &message).map_err(|e| CliError::WriteSocket {
             fd: self.socket_fd.as_raw_fd(),
             errno: e,
         })?;

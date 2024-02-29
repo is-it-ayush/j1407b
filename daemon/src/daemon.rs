@@ -9,7 +9,7 @@ use nix::{
     },
     unistd::{close, read},
 };
-use shared::{config::ConfigHolder, error::SharedError};
+use shared::{comms::Header, config::ConfigHolder, error::SharedError};
 use std::os::fd::{AsRawFd, OwnedFd};
 
 pub struct Daemon {
@@ -28,7 +28,7 @@ impl Daemon {
         let socket_addr = UnixAddr::new(DAEMON_SOCKET.as_bytes())
             .map_err(|e| SharedError::CreateUnixAddr { errno: e })?;
 
-        println!("Socket address: {:?}", socket_addr);
+        println!("[Info] Socket address: {:?}", socket_addr);
 
         // create a new socket
         let socket_fd = socket(
@@ -39,7 +39,7 @@ impl Daemon {
         )
         .map_err(|e| SharedError::CreateSocket { errno: e })?;
 
-        println!("Socket file descriptor: {:?}", socket_fd.as_raw_fd());
+        println!("[INFO] Socket file descriptor: {:?}", socket_fd.as_raw_fd());
 
         let _ = std::fs::remove_file(DAEMON_SOCKET);
         // bind the socket to the address
@@ -49,7 +49,7 @@ impl Daemon {
             errno: e,
         })?;
 
-        println!("Socket bound to address: {:?}", socket_addr);
+        println!("[INFO] Socket bound to address: {:?}", socket_addr);
 
         // set SO_REUSEADDR option
         setsockopt(&socket_fd, sockopt::ReuseAddr, &true).map_err(|e| {
@@ -65,7 +65,7 @@ impl Daemon {
             errno: e,
         })?;
 
-        println!("Listening for incoming connections");
+        println!("[INFO] Listening for incoming connections");
 
         Ok(Daemon {
             config: config,
@@ -83,29 +83,28 @@ impl Daemon {
                     errno: e,
                 }
             })?;
+            println!("[INFO] Accepted new connection: {:?}", conn_fd);
 
-            println!("Accepted new connection: {:?}", conn_fd);
-
-            let mut buffer = [0; 512]; // 1024 bytes buffer
-
+            // read the header
+            let mut header_buffer = [0u8; 41];
             loop {
-                // read from the connection
-                let bytes_read =
-                    read(conn_fd, &mut buffer).map_err(|e| DaemonError::ReadSocketConnection {
+                let bytes_read = read(conn_fd, &mut header_buffer).map_err(|e| {
+                    DaemonError::ReadSocketConnection {
                         socket_fd: self.socket_fd.as_raw_fd(),
                         conn_fd: conn_fd,
                         errno: e,
-                    })?;
-
-                println!("Read {} bytes", bytes_read);
-
-                if bytes_read == 0 {
+                    }
+                })?;
+                if bytes_read == 41 {
+                    println!("[INFO] The header was read successfully.");
                     break;
                 }
-
-                let message = std::str::from_utf8(&buffer[..bytes_read]).unwrap();
-                println!("Received message: {}", message);
             }
+            let header = rust_fr::deserializer::from_bytes::<Header>(&header_buffer)
+                .map_err(|e| SharedError::MessageDeserialize(e.to_string()))?;
+            println!("[INFO] Header: {:?}", header);
+
+            self.execute_command(header, conn_fd)?;
 
             // close the connection
             close(conn_fd).map_err(|e| DaemonError::CloseSocketConnection {
@@ -114,6 +113,39 @@ impl Daemon {
                 errno: e,
             })?;
         }
+    }
+
+    /// Execute a command based on the parsed CLI arguments.
+    pub fn execute_command(&self, header: Header, conn_fd: i32) -> Result<(), DaemonError> {
+        match header.command {
+            shared::comms::Command::Pull => self.pull(header, conn_fd),
+            _ => Ok(()),
+        }
+    }
+
+    /// The `pull` command
+    pub fn pull(&self, header: Header, conn_fd: i32) -> Result<(), DaemonError> {
+        println!("[INFO] Executing pull command");
+        // read the body
+        let mut body_buffer = vec![0u8; header.length as usize];
+        loop {
+            let bytes_read =
+                read(conn_fd, &mut body_buffer).map_err(|e| DaemonError::ReadSocketConnection {
+                    socket_fd: self.socket_fd.as_raw_fd(),
+                    conn_fd: conn_fd,
+                    errno: e,
+                })?;
+            if bytes_read == 0 {
+                println!("[INFO] The body was read successfully.");
+                break;
+            }
+        }
+        let body = rust_fr::deserializer::from_bytes::<String>(&body_buffer)
+            .map_err(|e| SharedError::MessageDeserialize(e.to_string()))?;
+
+        println!("[INFO] Body: {:?}", body);
+
+        Ok(())
     }
 }
 

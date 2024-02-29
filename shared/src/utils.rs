@@ -1,3 +1,5 @@
+//! Utility functions for the shared library.
+
 use crate::error::SharedError;
 
 const HOME_VARIABLE: &str = "HOME";

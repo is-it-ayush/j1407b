@@ -1,3 +1,5 @@
+//! Error types for the shared library. It uses `thiserror` for error handling.
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -34,16 +36,4 @@ pub enum SharedError {
 
     #[error("Serialize error: {source}")]
     ConfigSerialize { source: toml::ser::Error },
-}
-
-impl serde::ser::Error for SharedError {
-    fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        SharedError::MessageSerialize(msg.to_string())
-    }
-}
-
-impl serde::de::Error for SharedError {
-    fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        SharedError::MessageDeserialize(msg.to_string())
-    }
 }

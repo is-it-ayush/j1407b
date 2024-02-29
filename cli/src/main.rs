@@ -1,6 +1,5 @@
 mod clap;
 mod cli;
-mod config;
 mod error;
 
 use cli::Cli;
