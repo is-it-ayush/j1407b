@@ -1,13 +1,11 @@
 ### J1047b Message Protocol
 
-- The protocol is binary and is serialized & deserialized by the `rust-fr`
-library.
+- Message = Serialize(Header) + Serialize(Body) where Header = Type + Command + Length (41 bytes) & Body = Serialize(Any)
+- The protocol is binary and is serialized & deserialized by the `rust-fr` library.
 - It's a simple request-response protocol.
 - It is defined in the `comms` module in the `shared` crate.
-- The serialized header is concatenated with the serilized body and sent as a
-single message. It's the daemon's job to separate the header from the body & deserialize
-it. Then read the body with the given header information & perform the required
-action.
+- It's the daemon's job to separate the header from the body & deserialize it. Then read the body with the given header
+information & perform the required action.
 
 ```bnf
 <message> ::= <header> <body>

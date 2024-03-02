@@ -8,7 +8,7 @@ use nix::{
     unistd::write,
 };
 use shared::{
-    comms::{Command, Header, MessageType},
+    comms::{Command, Header, Type},
     error::SharedError,
 };
 use std::os::fd::{AsRawFd, OwnedFd};
@@ -66,7 +66,7 @@ impl Cli {
         let body_bytes = rust_fr::serializer::to_bytes(&image)
             .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
 
-        let header = Header::new(MessageType::Request, Command::Pull, body_bytes.len() as u64);
+        let header = Header::new(Type::Request, Command::Pull, body_bytes.len() as u64);
         let header_bytes = rust_fr::serializer::to_bytes(&header)
             .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
 
