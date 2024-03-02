@@ -8,9 +8,9 @@ use nix::{
     unistd::write,
 };
 use shared::{
-    comms::{Command, Type},
     error::SharedError,
     protocol::Protocol,
+    protocol::{Command, Type},
     requests::PullRequest,
 };
 use std::os::fd::{AsRawFd, OwnedFd};

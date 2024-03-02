@@ -7,10 +7,12 @@ use nix::{
         accept, bind, listen, setsockopt, socket, sockopt, AddressFamily, SockFlag, SockType,
         UnixAddr,
     },
-    unistd::{close, read},
+    unistd::close,
 };
 use shared::{
-    comms::Header, config::ConfigHolder, error::SharedError, protocol::Protocol,
+    config::ConfigHolder,
+    error::SharedError,
+    protocol::{self, Header, Protocol},
     requests::PullRequest,
 };
 use std::os::fd::{AsRawFd, OwnedFd};
@@ -91,7 +93,6 @@ impl Daemon {
             // read the header
             let header = Protocol::read_header(self.socket_fd.as_raw_fd(), conn_fd)?;
             println!("[INFO] Header: {:?}", header);
-
             self.execute_command(header, conn_fd)?;
 
             // close the connection
@@ -106,7 +107,7 @@ impl Daemon {
     /// Execute a command based on the parsed CLI arguments.
     pub fn execute_command(&self, header: Header, conn_fd: i32) -> Result<(), DaemonError> {
         match header.command {
-            shared::comms::Command::Pull => self.pull(header, conn_fd),
+            protocol::Command::Pull => self.pull(header, conn_fd),
             _ => Ok(()),
         }
     }

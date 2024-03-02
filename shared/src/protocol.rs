@@ -1,10 +1,59 @@
+//! This module deals with the protocol used to communicate between the client and the server. The
+//! serialization and deserialization of messages is done using the `rust-fr` crate.
+//!
+//! - The protocol is a very simple request-response protocol.
+//! - `Message = Serialize(Header) + Serialize(Body)` where `Header = Type + Command + Length` & `Body = T`.
+//! - Header is 16 bytes long. Serialized Header is 41 bytes long.
+//!     - The `Type` is either a `Request` or a `Response`.
+//!     - The `Command` is the type of command being executed. This is an enum.
+//!     - The `Length` is the length of the body. This is a `u64`.
+//! - The body is `Length` bytes long. This information is stored in the header.
+//! - The header is first read from the connection. It is deserialized and the body length is extracted.
+//! This body length is then used to read the body from the connection which is then deserialized into a `T` type.
 
-use crate::{
-    comms::{Command, Header, Type},
-    error::SharedError,
-};
+use crate::error::SharedError;
 use nix::unistd::read;
+use serde::{Deserialize, Serialize};
 use std::os::fd::RawFd;
+
+#[derive(Debug, Deserialize, Serialize)]
+#[repr(u8)]
+pub enum Type {
+    Request = 01,
+    Response = 02,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+#[repr(u8)]
+pub enum Command {
+    Pull = 01,
+    Run = 02,
+    Stop = 03,
+    Rm = 04,
+    Ps = 05,
+    Images = 06,
+    Logs = 07,
+    Exec = 08,
+    Tag = 09,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
+pub struct Header {
+    pub _type: Type,      // 1 byte
+    pub command: Command, // 1 byte
+    pub length: u64,      // 8 bytes
+}
+
+impl Header {
+    /// Create a new header
+    pub fn new(_type: Type, command: Command, length: u64) -> Self {
+        Header {
+            _type,
+            command,
+            length,
+        }
+    }
+}
 
 pub struct Protocol;
 
