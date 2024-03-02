@@ -9,7 +9,10 @@ use nix::{
     },
     unistd::{close, read},
 };
-use shared::{comms::Header, config::ConfigHolder, error::SharedError};
+use shared::{
+    comms::Header, config::ConfigHolder, error::SharedError, protocol::Protocol,
+    requests::PullRequest,
+};
 use std::os::fd::{AsRawFd, OwnedFd};
 
 pub struct Daemon {
@@ -86,22 +89,7 @@ impl Daemon {
             println!("[INFO] Accepted new connection: {:?}", conn_fd);
 
             // read the header
-            let mut header_buffer = [0u8; 41];
-            loop {
-                let bytes_read = read(conn_fd, &mut header_buffer).map_err(|e| {
-                    DaemonError::ReadSocketConnection {
-                        socket_fd: self.socket_fd.as_raw_fd(),
-                        conn_fd: conn_fd,
-                        errno: e,
-                    }
-                })?;
-                if bytes_read == 41 {
-                    println!("[INFO] The header was read successfully.");
-                    break;
-                }
-            }
-            let header = rust_fr::deserializer::from_bytes::<Header>(&header_buffer)
-                .map_err(|e| SharedError::MessageDeserialize(e.to_string()))?;
+            let header = Protocol::read_header(self.socket_fd.as_raw_fd(), conn_fd)?;
             println!("[INFO] Header: {:?}", header);
 
             self.execute_command(header, conn_fd)?;
@@ -127,23 +115,9 @@ impl Daemon {
     pub fn pull(&self, header: Header, conn_fd: i32) -> Result<(), DaemonError> {
         println!("[INFO] Executing pull command");
         // read the body
-        let mut body_buffer = vec![0u8; header.length as usize];
-        loop {
-            let bytes_read =
-                read(conn_fd, &mut body_buffer).map_err(|e| DaemonError::ReadSocketConnection {
-                    socket_fd: self.socket_fd.as_raw_fd(),
-                    conn_fd: conn_fd,
-                    errno: e,
-                })?;
-            if bytes_read == 0 {
-                println!("[INFO] The body was read successfully.");
-                break;
-            }
-        }
-        let body = rust_fr::deserializer::from_bytes::<String>(&body_buffer)
-            .map_err(|e| SharedError::MessageDeserialize(e.to_string()))?;
-
-        println!("[INFO] Body: {:?}", body);
+        let body =
+            Protocol::read_body::<PullRequest>(self.socket_fd.as_raw_fd(), conn_fd, header.length)?;
+        println!("[INFO] Body: {:?}", body.image);
 
         Ok(())
     }

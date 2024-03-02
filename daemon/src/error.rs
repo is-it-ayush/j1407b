@@ -38,16 +38,6 @@ pub enum DaemonError {
     },
 
     #[error(
-        "Failed to read a connection fd {conn_fd} from socket descriptor {socket_fd}: {errno}"
-    )]
-    ReadSocketConnection {
-        socket_fd: RawFd,
-        conn_fd: RawFd,
-        #[source]
-        errno: nix::errno::Errno,
-    },
-
-    #[error(
         "Failed to close a connection fd {conn_fd} from socket descriptor {socket_fd}: {errno}"
     )]
     CloseSocketConnection {

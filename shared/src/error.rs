@@ -1,5 +1,7 @@
 //! Error types for the shared library. It uses `thiserror` for error handling.
 
+use std::os::fd::RawFd;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -21,6 +23,16 @@ pub enum SharedError {
 
     #[error("Failed to create socket address (sockaddr_un): {errno}")]
     CreateUnixAddr {
+        #[source]
+        errno: nix::errno::Errno,
+    },
+
+    #[error(
+        "Failed to read a connection fd {conn_fd} from socket descriptor {socket_fd}: {errno}"
+    )]
+    ReadSocketConnection {
+        socket_fd: RawFd,
+        conn_fd: RawFd,
         #[source]
         errno: nix::errno::Errno,
     },

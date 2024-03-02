@@ -8,8 +8,10 @@ use nix::{
     unistd::write,
 };
 use shared::{
-    comms::{Command, Header, Type},
+    comms::{Command, Type},
     error::SharedError,
+    protocol::Protocol,
+    requests::PullRequest,
 };
 use std::os::fd::{AsRawFd, OwnedFd};
 
@@ -63,18 +65,11 @@ impl Cli {
     /// `pull`: Send a pull command to the daemon over the socket connection
     /// with the image name as the payload.
     fn pull(&mut self, image: String) -> Result<(), CliError> {
-        let body_bytes = rust_fr::serializer::to_bytes(&image)
-            .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
-
-        let header = Header::new(Type::Request, Command::Pull, body_bytes.len() as u64);
-        let header_bytes = rust_fr::serializer::to_bytes(&header)
-            .map_err(|e| SharedError::MessageSerialize(e.to_string()))?;
-
-        //println!("header_type_size: {}", std::mem::size_of::<Header>());
-        //println!("header_size: {}", header_bytes.len());
-        //println!("body_size: {}", body_bytes.len());
-
-        let message = [header_bytes, body_bytes].concat();
+        let request = PullRequest { image };
+        let body_bytes = Protocol::write_body::<PullRequest>(request)?;
+        let header_bytes =
+            Protocol::write_header(Type::Request, Command::Pull, body_bytes.len() as u64)?;
+        let message = Protocol::write_message(header_bytes, body_bytes);
         write(self.socket_fd.as_raw_fd(), &message).map_err(|e| CliError::WriteSocket {
             fd: self.socket_fd.as_raw_fd(),
             errno: e,
