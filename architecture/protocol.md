@@ -1,11 +1,15 @@
 ### J1047b Message Protocol
 
-- Message = Serialize(Header) + Serialize(Body) where Header = Type + Command + Length (41 bytes) & Body = Serialize(Any)
-- The protocol is binary and is serialized & deserialized by the `rust-fr` library.
-- It's a simple request-response protocol.
-- It is defined in the `comms` module in the `shared` crate.
-- It's the daemon's job to separate the header from the body & deserialize it. Then read the body with the given header
-information & perform the required action.
+- The protocol makes use of local unix sockets for communication.
+- The protocol is a binary request-response protocol.
+- Here `Message = Serialize(Header) + Serialize(Body)` where `Header = Type + Command + Length` & `Body = T`.
+- Header is 16 bytes long. Serialized Header is 41 bytes long.
+    - The `Type` is either a `Request` or a `Response`.
+    - The `Command` is the type of command being executed. This is an enum.
+    - The `Length` is the length of the body. This is a `u64`.
+- The body is `Length` bytes long. This information is stored in the header.
+- The header is first read from the connection. It is deserialized and the body length is extracted.
+This body length is then used to read the body from the connection which is then deserialized into a `T` type.
 
 ```bnf
 <message> ::= <header> <body>
@@ -21,15 +25,9 @@ information & perform the required action.
 
 ### Protocol Structures
 
-- Within `./shared/src/comms.rs`.
-- Header structure:
+- Important Structures: `./shared/src/protocol.rs`.
 ```rust
-struct Header {
-    _type: Type,
-    command: Command,
-    length: u64,
-}
-pub enum MessageType {
+pub enum Type {
     Request = 01,
     Response = 02,
 }
@@ -44,4 +42,10 @@ pub enum Command {
     Exec = 08,
     Tag = 09,
 }
+pub struct Header {
+    pub _type: Type,      // 1 byte
+    pub command: Command, // 1 byte
+    pub length: u64,      // 8 bytes
+}
+pub struct Protocol;
 ```

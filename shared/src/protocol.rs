@@ -1,8 +1,9 @@
 //! This module deals with the protocol used to communicate between the client and the server. The
 //! serialization and deserialization of messages is done using the `rust-fr` crate.
 //!
-//! - The protocol is a very simple request-response protocol.
-//! - `Message = Serialize(Header) + Serialize(Body)` where `Header = Type + Command + Length` & `Body = T`.
+//! - The protocol makes use of local unix sockets for communication.
+//! - The protocol is a binary request-response protocol.
+//! - Here `Message = Serialize(Header) + Serialize(Body)` where `Header = Type + Command + Length` & `Body = T`.
 //! - Header is 16 bytes long. Serialized Header is 41 bytes long.
 //!     - The `Type` is either a `Request` or a `Response`.
 //!     - The `Command` is the type of command being executed. This is an enum.
@@ -10,6 +11,22 @@
 //! - The body is `Length` bytes long. This information is stored in the header.
 //! - The header is first read from the connection. It is deserialized and the body length is extracted.
 //! This body length is then used to read the body from the connection which is then deserialized into a `T` type.
+//!
+//! - The grammer for the protocol is as follows:
+//! ```bnf
+//! <message> ::= <header> <body>
+//! <header> ::= <type> <command> <length>
+//! <type> ::= 1 | 2
+//! <command> ::= 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
+//! <length> ::= <int>+
+//! <body> ::= <string>
+//! <string> ::= <char>+
+//! <char> ::= any printable ASCII character
+//! <int> ::= any integer value
+//! ```
+//!
+//! This is also defined under [architecture/protocol.md](../../architecture/protocol.md) file. The
+//! communication is shown in the diagram at [architecture/communication.png](../../architecture/communication.png).
 
 use crate::error::SharedError;
 use nix::unistd::read;
