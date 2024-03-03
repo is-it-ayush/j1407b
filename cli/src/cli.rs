@@ -74,6 +74,7 @@ impl Cli {
             fd: self.socket_fd.as_raw_fd(),
             errno: e,
         })?;
+
         Ok(())
     }
 }

@@ -92,7 +92,10 @@ impl Daemon {
 
             // read the header
             let header = Protocol::read_header(self.socket_fd.as_raw_fd(), conn_fd)?;
-            println!("[INFO] Header: {:?}", header);
+            if header._type != protocol::Type::Request {
+                println!("[ERROR] Invalid message type: {:?}", header._type);
+                continue;
+            }
             self.execute_command(header, conn_fd)?;
 
             // close the connection
@@ -114,11 +117,9 @@ impl Daemon {
 
     /// The `pull` command
     pub fn pull(&self, header: Header, conn_fd: i32) -> Result<(), DaemonError> {
-        println!("[INFO] Executing pull command");
         // read the body
         let body =
             Protocol::read_body::<PullRequest>(self.socket_fd.as_raw_fd(), conn_fd, header.length)?;
-        println!("[INFO] Body: {:?}", body.image);
 
         Ok(())
     }

@@ -33,14 +33,14 @@ use nix::unistd::read;
 use serde::{Deserialize, Serialize};
 use std::os::fd::RawFd;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[repr(u8)]
 pub enum Type {
     Request = 01,
     Response = 02,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[repr(u8)]
 pub enum Command {
     Pull = 01,
@@ -54,7 +54,7 @@ pub enum Command {
     Tag = 09,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 pub struct Header {
     pub _type: Type,      // 1 byte
     pub command: Command, // 1 byte
